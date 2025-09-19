@@ -1,0 +1,2434 @@
+{
+  "openapi": "3.1.0",
+  "tags": [
+    {
+      "name": "ratnawnai",
+      "description": "Turn your merchandise into a photographic sharable masterpieces."
+    }
+  ],
+  "info": {
+    "agentName": "ratnawnai",
+    "agentPath": "@microagent/ratnawnai",
+    "iconUrl": "https://raw.githubusercontent.com/microfox-ai/microfox/refs/heads/main/logos/sparkboard.svg",
+    "title": "Ratnawnai",
+    "description": "Turn your merchandise into a photographic sharable masterpieces.",
+    "status": "stable",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Microfox",
+      "email": "microfox@themoondevs.com"
+    },
+    "agentCard": {
+      "protocolVersion": "0.2.5",
+      "name": "Ratnawnai",
+      "description": "Turn your merchandise into a photographic sharable masterpieces.",
+      "url": "https://ratnawnai.microfox.app",
+      "iconUrl": "https://raw.githubusercontent.com/microfox-ai/microfox/refs/heads/main/logos/sparkboard.svg",
+      "provider": {
+        "organization": "Microfox",
+        "url": "https://microfox.app"
+      },
+      "version": "1.0.0",
+      "capabilities": {
+        "streaming": false,
+        "pushNotifications": false,
+        "stateTransitionHistory": false,
+        "extensions": []
+      },
+      "skills": [
+        {
+          "id": "search",
+          "name": "Search Images / Artworks for Prompts",
+          "description": "Search for images / artworks to get their prompts.",
+          "tags": [
+            "search"
+          ],
+          "inputModes": [
+            "application/json"
+          ],
+          "outputModes": [
+            "application/json"
+          ]
+        },
+        {
+          "id": "index",
+          "name": "Index",
+          "description": "Index images in the internet from any url to be used for search.",
+          "tags": [
+            "index"
+          ],
+          "inputModes": [
+            "application/json"
+          ],
+          "outputModes": [
+            "application/json"
+          ]
+        }
+      ],
+      "defaultInputModes": [],
+      "defaultOutputModes": []
+    },
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "security": [
+    {
+      "x-microfox-packages": [
+        "@microfox/ai-provider-google"
+      ]
+    }
+  ],
+  "servers": [
+    {
+      "url": "https://api.microfox.com/agents/ratnawnai",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/index/stock": {
+      "post": {
+        "summary": "Search for Stock/Art/AI Images from multiple sites",
+        "operationId": "triggerStocksearchIndexing",
+        "description": "Searches for Stock/Art/AI Images from a single or multiple sites",
+        "tags": [
+          "Stocksearch"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "siteLinks": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "description": "Single site link (backward compatibility)"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Array of site links to process"
+                      }
+                    ]
+                  },
+                  "indexingLimit": {
+                    "type": "number",
+                    "description": "Maximum number of images to index across all sites in this session",
+                    "default": 50
+                  },
+                  "productType": {
+                    "type": "string",
+                    "description": "The type of product being indexed"
+                  },
+                  "gender": {
+                    "type": "string",
+                    "description": "The gender associated with the product",
+                    "enum": [
+                      "male",
+                      "female",
+                      "boy",
+                      "girl",
+                      "unisex",
+                      "unknown"
+                    ],
+                    "default": "unknown"
+                  }
+                },
+                "required": [
+                  "siteLinks"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted: The indexing request(s) have been successfully queued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "processedCount": {
+                      "type": "number",
+                      "description": "Number of sites processed"
+                    },
+                    "indexingId": {
+                      "type": "string",
+                      "description": "Unique identifier for the indexing session"
+                    },
+                    "indexingLimit": {
+                      "type": "number",
+                      "description": "Maximum number of images to index across all sites in this session"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: Missing or invalid request body."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      },
+      "get": {
+        "operationId": "getIndexedImages",
+        "summary": "Get indexed images by indexing ID",
+        "description": "Retrieves the top K images for a given indexing ID along with indexing progress information",
+        "tags": [
+          "Images"
+        ],
+        "parameters": [
+          {
+            "name": "indexingId",
+            "in": "query",
+            "description": "The unique identifier of the indexing session",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productType",
+            "in": "query",
+            "description": "The type of product being indexed",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "topK",
+            "in": "query",
+            "description": "Number of results to return (1-100)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved images",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ]
+                              },
+                              "score": {
+                                "type": "number"
+                              },
+                              "metadata": {
+                                "$ref": "#/components/schemas/RagImageMetadata",
+                                "description": "Image metadata (included when includeMetadata=true)"
+                              },
+                              "data": {
+                                "type": "object",
+                                "description": "Additional data associated with the result"
+                              }
+                            }
+                          }
+                        },
+                        "total": {
+                          "type": "number",
+                          "description": "Total number of results returned"
+                        },
+                        "productType": {
+                          "type": "string",
+                          "description": "The type of product being indexed"
+                        },
+                        "indexing": {
+                          "type": "object",
+                          "properties": {
+                            "progress": {
+                              "type": "number",
+                              "description": "Indexing progress percentage (0-100)"
+                            },
+                            "itemsRemaining": {
+                              "type": "number",
+                              "description": "Number of items remaining to be indexed"
+                            },
+                            "totalItemsToIndex": {
+                              "type": "number",
+                              "description": "Total number of items to be indexed"
+                            },
+                            "isFullyIndexed": {
+                              "type": "boolean",
+                              "description": "Whether the indexing process is complete"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete indexed documents by indexingId or a list of IDs",
+        "operationId": "deleteStocksearchDocuments",
+        "description": "Deletes indexed documents from the vector base using either an indexingId or a specific list of document IDs.",
+        "tags": [
+          "Stocksearch"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "indexingId": {
+                    "type": "string",
+                    "description": "The indexingId to delete all associated documents for."
+                  },
+                  "productType": {
+                    "type": "string",
+                    "description": "The type of product being deleted (e.g., KURTIS)."
+                  },
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "An array of specific document IDs to delete."
+                  }
+                },
+                "required": [
+                  "productType"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Documents deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "deletedCount": {
+                      "type": "number",
+                      "description": "Number of documents deleted."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: Missing or invalid request body."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/index/types": {
+      "get": {
+        "summary": "Get all product types",
+        "operationId": "getProductTypes",
+        "description": "Returns a list of all available product types.",
+        "tags": [
+          "Stocksearch"
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of product types.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "count": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/index/search": {
+      "get": {
+        "summary": "Search for Stock/Art/AI Images & Prompts",
+        "operationId": "searchStocksearchImages",
+        "description": "Searches for Stock/Art/AI Images using RAG search with optional filtering by various metadata fields",
+        "tags": [
+          "Sparkboard"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search query text for RAG search search"
+          },
+          {
+            "name": "productType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by MIME type (exact match) - Only fill this if user mentions that he only wants this MIME type"
+          },
+          {
+            "name": "platformId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by platform ID (exact match) - Only fill this if user mentions that he only wants this platform ID"
+          },
+          {
+            "name": "topK",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Number of results to return (1-100) - Only fill this if user mentions that he only wants this number of results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ]
+                              },
+                              "score": {
+                                "type": "number"
+                              },
+                              "metadata": {
+                                "$ref": "#/components/schemas/RagImageMetadata",
+                                "description": "Image metadata (included when includeMetadata=true)"
+                              },
+                              "data": {
+                                "type": "object",
+                                "description": "Additional data associated with the result"
+                              }
+                            }
+                          }
+                        },
+                        "total": {
+                          "type": "number",
+                          "description": "Total number of results returned"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: Missing required query parameter or invalid topK value",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error while querying images",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ratnawnai/fashionai": {
+      "get": {
+        "summary": "Get status of a conversion request",
+        "operationId": "getConversionStatus",
+        "description": "Retrieves the status of a specific conversion request using its ID.",
+        "tags": [
+          "Conversion"
+        ],
+        "security": [
+          {
+            "RATNAWNAI_API_KEY": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the conversion request to check."
+          },
+          {
+            "in": "query",
+            "name": "imageId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the image to check."
+          },
+          {
+            "in": "query",
+            "name": "generateCsv",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Whether to generate a CSV file with product data. Defaults to false."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The status of the conversion request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Successfully fetched status"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "1234567890"
+                        },
+                        "generatedImages": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "imageId": {
+                                "type": "string",
+                                "example": "1234567890"
+                              },
+                              "imageSrc": {
+                                "type": "string",
+                                "example": "https://s3.amazonaws.com/ratnawnai/fashionai/1234567890/1234567890.jpg"
+                              },
+                              "shotType": {
+                                "type": "string",
+                                "enum": [
+                                  "front",
+                                  "back",
+                                  "side",
+                                  "full",
+                                  "close-up"
+                                ]
+                              },
+                              "status": {
+                                "type": "string",
+                                "example": "completed",
+                                "enum": [
+                                  "completed",
+                                  "pending",
+                                  "generating",
+                                  "processing",
+                                  "failed"
+                                ],
+                                "description": "The status of the image generation."
+                              },
+                              "error": {
+                                "type": "string",
+                                "example": "Model failed to generate image.",
+                                "description": "Error message if the status is 'failed'."
+                              },
+                              "generatedRefImages": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "inputImageSrc": {
+                                      "type": "string",
+                                      "example": "https://ratnawnai.blr1.cdn.digitaloceanspaces.com/tests/8.jpg"
+                                    },
+                                    "savedImageSrc": {
+                                      "type": "string",
+                                      "example": "https://ratnawnai.blr1.cdn.digitaloceanspaces.com/fashionai_1755005879805_8x1pf3o0y/fashionai_1755005879805_8x1pf3o0y-0-ref.jpg"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "upscaledImages": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "imageId": {
+                                "type": "string"
+                              },
+                              "imageSrc": {
+                                "type": "string"
+                              },
+                              "shotType": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "generatedVideos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "videoId": {
+                                "type": "string",
+                                "example": "1234567890"
+                              },
+                              "videoUrl": {
+                                "type": "string",
+                                "example": "https://s3.amazonaws.com/ratnawnai/fashionai/1234567890/1234567890.mp4"
+                              }
+                            }
+                          }
+                        },
+                        "status": {
+                          "type": "string",
+                          "example": "completed"
+                        },
+                        "csv": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "AI-generated product description"
+                        },
+                        "keyFeatures": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "AI-generated key features of the product"
+                        },
+                        "searchKeywords": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "AI-generated search keywords for the product"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request, ID is missing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "ID is required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, no data for the given ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "No data found for this ID"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Error fetching data"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "postConvertSpecialPipeline1",
+        "tags": [
+          "conversion"
+        ],
+        "summary": "Convert product images to marketing assets.",
+        "description": "This endpoint analyzes product images, enriches them with AI-generated details, and creates marketing assets by combining them with suitable backgrounds and camera shots.",
+        "security": [
+          {
+            "RATNAWNAI_API_KEY": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "inputImages": {
+                    "type": "array",
+                    "description": "Input image URLs paired with their view type.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "url": {
+                          "type": "string"
+                        },
+                        "view": {
+                          "type": "string",
+                          "enum": [
+                            "front",
+                            "back",
+                            "side",
+                            "detail"
+                          ]
+                        },
+                        "backgrounds": {
+                          "type": "array",
+                          "description": "Array of background counts in the order [white, plain, random]. Defaults to [0, 0, 1].",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 3,
+                          "maxItems": 3
+                        }
+                      },
+                      "required": [
+                        "url",
+                        "view"
+                      ]
+                    }
+                  },
+                  "productType": {
+                    "type": "string",
+                    "description": "The type of product (e.g., 'Kurti', 'shirt', 'tshirt', 'general'). Affects the AI analysis model."
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": [
+                      "woman",
+                      "man"
+                    ],
+                    "description": "The gender of the person in the image. This will affect the model used for generation."
+                  },
+                  "text": {
+                    "type": "string",
+                    "description": "Free-form instruction/description. If provided, it will guide all outputs."
+                  },
+                  "isVideo": {
+                    "type": "boolean",
+                    "description": "Whether to generate video instead of images.",
+                    "default": false
+                  },
+                  "upscale": {
+                    "type": "boolean",
+                    "description": "Whether to generate high-resolution images.",
+                    "default": true
+                  },
+                  "backgroundSelection": {
+                    "type": "string",
+                    "description": "Optional keyword to guide background selection from RAG."
+                  }
+                },
+                "required": [
+                  "inputImages"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully triggered image generation requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or no body found."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/ratnawnai/fashionai/fix": {
+      "post": {
+        "operationId": "postConvertSpecialPipeline1Fix",
+        "tags": [
+          "conversion"
+        ],
+        "summary": "Fix generated images based on user feedback.",
+        "description": "This endpoint re-triggers the image generation process for specified image IDs with additional feedback, skipping the initial product analysis.",
+        "security": [
+          {
+            "RATNAWNAI_API_KEY": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "feedbacks": {
+                    "type": "array",
+                    "description": "An array of feedback objects, each with an imageId and feedback.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "imageId": {
+                          "type": "string",
+                          "description": "The ID of the image to be fixed."
+                        },
+                        "feedback": {
+                          "type": "string",
+                          "description": "User feedback to guide the image correction."
+                        }
+                      },
+                      "required": [
+                        "imageId"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "feedbacks"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully triggered image fixing requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or no body found."
+          },
+          "401": {
+            "description": "Unauthorized."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/ratnawnai/fashionai/video": {
+      "post": {
+        "operationId": "postImageToVideo",
+        "tags": [
+          "conversion"
+        ],
+        "summary": "Generate a video from an image.",
+        "description": "This endpoint takes an image URL and a conversion ID and generates a video using Kling AI via an SQS queue.",
+        "security": [
+          {
+            "RATNAWNAI_API_KEY": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Optional. The imageId to update. If not provided, a new one will be created."
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "description": "The URL of the image to generate the video from."
+                  }
+                },
+                "required": [
+                  "imageUrl"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully triggered video generation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input."
+          },
+          "401": {
+            "description": "Unauthorized."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "RATNAWNAI_API_KEY": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key"
+      }
+    },
+    "schemas": {
+      "ConvertRequest": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "allIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "processingId": {
+            "type": "string"
+          },
+          "index": {
+            "type": "number"
+          },
+          "inputImages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "front",
+                    "back",
+                    "side",
+                    "detail"
+                  ]
+                },
+                "backgrounds": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "url",
+                "view"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "userText": {
+            "type": "string"
+          },
+          "feedback": {
+            "type": "string"
+          },
+          "numberOfOutputs": {
+            "type": "number"
+          },
+          "isVideo": {
+            "default": false,
+            "type": "boolean"
+          },
+          "upscale": {
+            "default": true,
+            "type": "boolean"
+          },
+          "isRegenerate": {
+            "default": false,
+            "type": "boolean"
+          },
+          "productType": {
+            "type": "string"
+          },
+          "selectedModel": {
+            "type": "string"
+          },
+          "background_variations_setting": {
+            "type": "object",
+            "properties": {
+              "indexingId": {
+                "type": "string"
+              },
+              "src": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "setId": {
+                "type": "string"
+              },
+              "productType": {
+                "type": "string"
+              },
+              "responsiveImages": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "url": {
+                          "type": "string"
+                        },
+                        "size": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "url",
+                        "size"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "altText": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "imgPermalink": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "pagePermalink": {
+                "type": "string"
+              },
+              "width": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "height": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "palette": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "dominantColor": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "secondaryColor": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "accentColor": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "aspectRatioType": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "aspectRatio": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "platform": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "platformId": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "platformUrl": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "background": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "description": "A detailed, descriptive summary of the background in the image",
+                    "type": "string"
+                  },
+                  "keywords": {
+                    "description": "General keywords that describe the background or the environment in the image.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "lightingKeywords": {
+                    "description": "Your task is to provide a list of keywords that accurately describe the lighting in the image. Analyze the following aspects methodically and select ONLY the most relevant terms.\n\n    1. **Direction (Most Important):** Critically identify the direction of the main light source. Use precise terms like 'side-light (from camera-right)', 'side-light (from camera-left)', 'front-light', 'backlight', 'top-light'.\n\n    2. **Quality:** Analyze the sharpness of the shadows to determine the light's character. Use terms like 'soft-light', 'hard-light', 'diffused'.\n\n    3. **Style & Setup:** Describe the overall lighting setup and mood. Use terms like 'high-key', 'low-key', 'studio-lighting', 'natural-light', 'three-point-lighting'.\n\n    4. **Color:** Describe the color temperature of the light. Use terms like 'warm-light', 'cool-light', 'neutral-white'.\n    \n    Ensure every keyword you choose is clearly supported by visual evidence in the image.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "environmentKeywords": {
+                    "description": "Describe the environment in the image - \n    Indoor, Outdoor, Studio, Home, Office, etc...\n    Specific Environment - Living Room, Bedroom, Kitchen, Bathroom, etc...\n    Specific Environment - Living Room, Bedroom, Kitchen, Bathroom, etc...\n    ",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "colorKeywords": {
+                    "description": "Describe the color setup in the image - \n    Color of the background - Warm, Cool, Neutral, etc...\n    Muted, Vibrant, Pop, etc...\n    ",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "description",
+                  "keywords",
+                  "lightingKeywords",
+                  "environmentKeywords",
+                  "colorKeywords"
+                ],
+                "additionalProperties": false
+              },
+              "product": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "description": "A detailed, descriptive summary of the product, including its style, fit, material, and key features.",
+                    "type": "string"
+                  },
+                  "productType": {
+                    "description": "The specific type of product. (e.g., 'lehenga-choli', 'saree', 'kurta-set', 'handbag').",
+                    "type": "string"
+                  },
+                  "materialKeywords": {
+                    "description": "Provide keywords for the product's material(s). Use specific terms where possible (e.g., 'silk-brocade', 'georgette', 'cotton', 'leather').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "colorKeywords": {
+                    "description": "Provide keywords for the product's primary and secondary colors. Use descriptive terms (e.g., 'emerald-green', 'mustard-yellow', 'antique-gold').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "patternAndEmbellishmentKeywords": {
+                    "description": "Describe any patterns or decorative elements. (e.g., 'floral-pattern', 'geometric-print', 'sequin-work', 'embroidery', 'mirror-work').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "featureKeywords": {
+                    "description": "Describe specific construction details or features. (e.g., 'scoop-neck', 'elbow-length-sleeves', 'princess-seams', 'tassels', 'piping').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "styleAndOccasionKeywords": {
+                    "description": "Describe the product's overall style and suitable occasions. (e.g., 'festive-wear', 'casual', 'formal', 'modern-ethnic', 'wedding').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "description",
+                  "productType",
+                  "materialKeywords",
+                  "colorKeywords",
+                  "patternAndEmbellishmentKeywords",
+                  "featureKeywords",
+                  "styleAndOccasionKeywords"
+                ],
+                "additionalProperties": false
+              },
+              "camera": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "description": "Perform a comprehensive technical analysis of the image's photographic properties. Write a polished summary focusing exclusively on the camera work and lighting. **Crucially, this summary must be purely technical.** Do NOT mention the subject's pose, clothing, accessories, hair, or physical appearance in this final description.",
+                    "type": "string"
+                  },
+                  "shotType": {
+                    "description": "Analyze the shot's framing and provide the single most accurate, standard photographic term to classify it (e.g., 'medium-shot', 'close-up').",
+                    "type": "string"
+                  },
+                  "angle": {
+                    "description": "Analyze the camera's primary angle relative to the subject and provide the single most accurate term (e.g., 'eye-level', 'high-angle').",
+                    "type": "string"
+                  },
+                  "compositionKeywords": {
+                    "description": "Based on your analysis, provide keywords for the compositional techniques used. Use standard terms (e.g., 'central-framing', 'negative-space').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "inferredFocalLength": {
+                    "description": "Based on the field of view and perspective compression, infer the likely focal length range. (e.g., 'wide-angle (24-35mm)', 'standard (50mm)', 'short-telephoto (85-135mm)').",
+                    "type": "string"
+                  },
+                  "inferredAperture": {
+                    "description": "Based on the depth of field, infer the likely aperture setting range. (e.g., 'wide-aperture (f/1.4 - f/2.8)', 'medium-aperture (f/4 - f/8)', 'narrow-aperture (f/11+)').",
+                    "type": "string"
+                  },
+                  "lensCharacteristics": {
+                    "description": "Identify any distinct optical characteristics or artifacts from the lens. Use keywords like 'lens-flare', 'vignetting', 'chromatic-aberration', 'background-compression', 'no-visible-distortion', 'sharp-rendering'.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "lightingStyleKeywords": {
+                    "description": "Based on your analysis, provide keywords for the lighting style. Use professional terms (e.g., 'soft-light', 'high-key', 'studio-light').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "depthOfField": {
+                    "description": "Describe the depth of field observed in the image, using a standard term (e.g., 'shallow-depth-of-field').",
+                    "type": "string"
+                  },
+                  "focalPoint": {
+                    "description": "The specific subject or area that is in sharpest focus (e.g., 'Model's eyes', 'Embroidery detail').",
+                    "type": "string"
+                  },
+                  "colorAndToneKeywords": {
+                    "description": "Based on your analysis, provide keywords for the overall color palette and tone. Use standard terms (e.g., 'warm-tones', 'muted', 'low-contrast').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "inferredSensorSize": {
+                    "description": "Based on the overall image quality, depth of field control, and dynamic range, infer the likely camera sensor size. (e.g., 'full-frame', 'medium-format', 'APS-C', 'smartphone-sensor').",
+                    "type": "string"
+                  },
+                  "shutterSpeedEffect": {
+                    "description": "Analyze the image for motion. Describe the effect of the shutter speed. (e.g., 'frozen-action (fast shutter)', 'motion-blur (slow shutter)', 'no-motion-detected').",
+                    "type": "string"
+                  },
+                  "imageQualityKeywords": {
+                    "description": "Describe the clarity and texture of the image. Use keywords like 'clean', 'sharp', 'low-noise', 'visible-film-grain', 'digital-noise', 'high-dynamic-range'.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "poseKeywords": {
+                    "description": "Identify high-level keywords that describe the pose (e.g., 'standing', 'seated', 'direct-gaze').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "poseDescription": {
+                    "description": "A detailed, narrative description of the subject's pose, body language, and expression.",
+                    "type": "string"
+                  },
+                  "accessoryDescription": {
+                    "description": "A detailed, descriptive summary of all accessories worn by the subject. If no accessories are visible, state 'No accessories visible'.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "description",
+                  "shotType",
+                  "angle",
+                  "compositionKeywords",
+                  "inferredFocalLength",
+                  "inferredAperture",
+                  "lensCharacteristics",
+                  "lightingStyleKeywords",
+                  "depthOfField",
+                  "focalPoint",
+                  "colorAndToneKeywords",
+                  "inferredSensorSize",
+                  "shutterSpeedEffect",
+                  "imageQualityKeywords",
+                  "poseKeywords",
+                  "poseDescription",
+                  "accessoryDescription"
+                ],
+                "additionalProperties": false
+              },
+              "subject": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "description": "A detailed, holistic summary of the subject. **Crucially, include observations about their facial expression, mood, hair style and color, and overall presence.** Focus only on the person in the image.",
+                    "type": "string"
+                  },
+                  "modelName": {
+                    "description": "Provide a short, descriptive, human-readable title for the subject. **This should be a summary of their role or appearance, NOT their ethnicity or skin tone.** (e.g., 'Woman in an elegant pose', 'Man with a thoughtful expression', 'Smiling woman in a studio').",
+                    "type": "string"
+                  },
+                  "ethnicityKeywords": {
+                    "description": "Provide objective keywords for the subject's perceived ethnicity. Use lowercase and kebab-case for multi-word terms (e.g., 'south-asian', 'east-asian', 'caucasian').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "genderKeywords": {
+                    "description": "Provide objective keywords for the subject's perceived gender. Use lowercase formatting (e.g., 'woman', 'man').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "ageKeywords": {
+                    "description": "Provide objective keywords for the subject's perceived age range. Use lowercase and kebab-case for multi-word terms (e.g., 'child', 'young-adult', 'middle-aged').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "bodyTypeKeywords": {
+                    "description": "Provide objective keywords for the subject's visible body type. Use lowercase formatting (e.g., 'slim', 'athletic', 'average').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "subjectAngle": {
+                    "description": "The subject's orientation relative to the camera. Use 'front' if they are facing the camera, 'side' if they are turned to the side, and 'back' if they are showing their back.",
+                    "type": "string",
+                    "enum": [
+                      "front",
+                      "side",
+                      "back"
+                    ]
+                  }
+                },
+                "required": [
+                  "description",
+                  "modelName",
+                  "ethnicityKeywords",
+                  "genderKeywords",
+                  "ageKeywords",
+                  "bodyTypeKeywords",
+                  "subjectAngle"
+                ],
+                "additionalProperties": false
+              },
+              "gender": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "src",
+              "setId",
+              "productType",
+              "responsiveImages",
+              "description",
+              "altText",
+              "imgPermalink",
+              "pagePermalink",
+              "width",
+              "height",
+              "aspectRatioType",
+              "aspectRatio",
+              "platform",
+              "platformId",
+              "platformUrl"
+            ],
+            "additionalProperties": false
+          },
+          "aspectRatio": {
+            "type": "string",
+            "enum": [
+              "1:1",
+              "16:9",
+              "4:3",
+              "3:4",
+              "9:16"
+            ]
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "woman",
+              "man"
+            ]
+          },
+          "backgroundSelection": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "processing",
+              "generating",
+              "completed",
+              "failed"
+            ]
+          },
+          "processedPrompt": {
+            "type": "object",
+            "properties": {
+              "prompt": {
+                "type": "string"
+              },
+              "reasoning": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "prompt",
+              "reasoning"
+            ],
+            "additionalProperties": false
+          },
+          "generatedImage": {
+            "type": "object",
+            "properties": {
+              "inputImageSrc": {
+                "type": "string"
+              },
+              "originalImageSrc": {
+                "type": "string"
+              },
+              "savedImageSrc": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "originalImageSrc",
+              "savedImageSrc"
+            ],
+            "additionalProperties": false
+          },
+          "geminiGeneratedImage": {
+            "type": "object",
+            "properties": {
+              "inputImageSrc": {
+                "type": "string"
+              },
+              "originalImageSrc": {
+                "type": "string"
+              },
+              "savedImageSrc": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "originalImageSrc",
+              "savedImageSrc"
+            ],
+            "additionalProperties": false
+          },
+          "upscaledImage": {
+            "type": "object",
+            "properties": {
+              "inputImageSrc": {
+                "type": "string"
+              },
+              "originalImageSrc": {
+                "type": "string"
+              },
+              "savedImageSrc": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "originalImageSrc",
+              "savedImageSrc"
+            ],
+            "additionalProperties": false
+          },
+          "productDetail": {
+            "type": "object",
+            "properties": {
+              "product": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "description": "A detailed, descriptive summary of the product, including its style, fit, material, and key features.",
+                    "type": "string"
+                  },
+                  "productType": {
+                    "description": "The specific type of product. (e.g., 'lehenga-choli', 'saree', 'kurta-set', 'handbag').",
+                    "type": "string"
+                  },
+                  "materialKeywords": {
+                    "description": "Provide keywords for the product's material(s). Use specific terms where possible (e.g., 'silk-brocade', 'georgette', 'cotton', 'leather').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "colorKeywords": {
+                    "description": "Provide keywords for the product's primary and secondary colors. Use descriptive terms (e.g., 'emerald-green', 'mustard-yellow', 'antique-gold').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "patternAndEmbellishmentKeywords": {
+                    "description": "Describe any patterns or decorative elements. (e.g., 'floral-pattern', 'geometric-print', 'sequin-work', 'embroidery', 'mirror-work').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "featureKeywords": {
+                    "description": "Describe specific construction details or features. (e.g., 'scoop-neck', 'elbow-length-sleeves', 'princess-seams', 'tassels', 'piping').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "styleAndOccasionKeywords": {
+                    "description": "Describe the product's overall style and suitable occasions. (e.g., 'festive-wear', 'casual', 'formal', 'modern-ethnic', 'wedding').",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "description",
+                  "productType",
+                  "materialKeywords",
+                  "colorKeywords",
+                  "patternAndEmbellishmentKeywords",
+                  "featureKeywords",
+                  "styleAndOccasionKeywords"
+                ],
+                "additionalProperties": false
+              },
+              "shotType": {
+                "type": "string"
+              },
+              "imgUrl": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "product",
+              "shotType",
+              "imgUrl"
+            ],
+            "additionalProperties": false
+          },
+          "generatedRefImages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "inputImageSrc": {
+                  "type": "string"
+                },
+                "originalImageSrc": {
+                  "type": "string"
+                },
+                "savedImageSrc": {
+                  "type": "string"
+                },
+                "view": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "originalImageSrc",
+                "savedImageSrc",
+                "view"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "error": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "statusChecker": {
+            "type": "string"
+          },
+          "createdAt": {
+            "description": "The creation date in ISO format.",
+            "type": "string"
+          },
+          "updatedAt": {
+            "description": "The last update date in ISO format.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "processingId",
+          "inputImages",
+          "isVideo",
+          "upscale",
+          "isRegenerate",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "RagImageMetadata": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "indexingId": {
+            "type": "string"
+          },
+          "src": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "setId": {
+            "type": "string"
+          },
+          "productType": {
+            "type": "string"
+          },
+          "responsiveImages": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "size"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "altText": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "imgPermalink": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pagePermalink": {
+            "type": "string"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "palette": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dominantColor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "secondaryColor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "accentColor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "aspectRatioType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "aspectRatio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "platformId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "platformUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "background": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "description": "A detailed, descriptive summary of the background in the image",
+                "type": "string"
+              },
+              "keywords": {
+                "description": "General keywords that describe the background or the environment in the image.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "lightingKeywords": {
+                "description": "Your task is to provide a list of keywords that accurately describe the lighting in the image. Analyze the following aspects methodically and select ONLY the most relevant terms.\n\n    1. **Direction (Most Important):** Critically identify the direction of the main light source. Use precise terms like 'side-light (from camera-right)', 'side-light (from camera-left)', 'front-light', 'backlight', 'top-light'.\n\n    2. **Quality:** Analyze the sharpness of the shadows to determine the light's character. Use terms like 'soft-light', 'hard-light', 'diffused'.\n\n    3. **Style & Setup:** Describe the overall lighting setup and mood. Use terms like 'high-key', 'low-key', 'studio-lighting', 'natural-light', 'three-point-lighting'.\n\n    4. **Color:** Describe the color temperature of the light. Use terms like 'warm-light', 'cool-light', 'neutral-white'.\n    \n    Ensure every keyword you choose is clearly supported by visual evidence in the image.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "environmentKeywords": {
+                "description": "Describe the environment in the image - \n    Indoor, Outdoor, Studio, Home, Office, etc...\n    Specific Environment - Living Room, Bedroom, Kitchen, Bathroom, etc...\n    Specific Environment - Living Room, Bedroom, Kitchen, Bathroom, etc...\n    ",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "colorKeywords": {
+                "description": "Describe the color setup in the image - \n    Color of the background - Warm, Cool, Neutral, etc...\n    Muted, Vibrant, Pop, etc...\n    ",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "description",
+              "keywords",
+              "lightingKeywords",
+              "environmentKeywords",
+              "colorKeywords"
+            ],
+            "additionalProperties": false
+          },
+          "product": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "description": "A detailed, descriptive summary of the product, including its style, fit, material, and key features.",
+                "type": "string"
+              },
+              "productType": {
+                "description": "The specific type of product. (e.g., 'lehenga-choli', 'saree', 'kurta-set', 'handbag').",
+                "type": "string"
+              },
+              "materialKeywords": {
+                "description": "Provide keywords for the product's material(s). Use specific terms where possible (e.g., 'silk-brocade', 'georgette', 'cotton', 'leather').",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "colorKeywords": {
+                "description": "Provide keywords for the product's primary and secondary colors. Use descriptive terms (e.g., 'emerald-green', 'mustard-yellow', 'antique-gold').",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "patternAndEmbellishmentKeywords": {
+                "description": "Describe any patterns or decorative elements. (e.g., 'floral-pattern', 'geometric-print', 'sequin-work', 'embroidery', 'mirror-work').",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "featureKeywords": {
+                "description": "Describe specific construction details or features. (e.g., 'scoop-neck', 'elbow-length-sleeves', 'princess-seams', 'tassels', 'piping').",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "styleAndOccasionKeywords": {
+                "description": "Describe the product's overall style and suitable occasions. (e.g., 'festive-wear', 'casual', 'formal', 'modern-ethnic', 'wedding').",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "description",
+              "productType",
+              "materialKeywords",
+              "colorKeywords",
+              "patternAndEmbellishmentKeywords",
+              "featureKeywords",
+              "styleAndOccasionKeywords"
+            ],
+            "additionalProperties": false
+          },
+          "camera": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "description": "Perform a comprehensive technical analysis of the image's photographic properties. Write a polished summary focusing exclusively on the camera work and lighting. **Crucially, this summary must be purely technical.** Do NOT mention the subject's pose, clothing, accessories, hair, or physical appearance in this final description.",
+                "type": "string"
+              },
+              "shotType": {
+                "description": "Analyze the shot's framing and provide the single most accurate, standard photographic term to classify it (e.g., 'medium-shot', 'close-up').",
+                "type": "string"
+              },
+              "angle": {
+                "description": "Analyze the camera's primary angle relative to the subject and provide the single most accurate term (e.g., 'eye-level', 'high-angle').",
+                "type": "string"
+              },
+              "compositionKeywords": {
+                "description": "Based on your analysis, provide keywords for the compositional techniques used. Use standard terms (e.g., 'central-framing', 'negative-space').",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "inferredFocalLength": {
+                "description": "Based on the field of view and perspective compression, infer the likely focal length range. (e.g., 'wide-angle (24-35mm)', 'standard (50mm)', 'short-telephoto (85-135mm)').",
+                "type": "string"
+              },
+              "inferredAperture": {
+                "description": "Based on the depth of field, infer the likely aperture setting range. (e.g., 'wide-aperture (f/1.4 - f/2.8)', 'medium-aperture (f/4 - f/8)', 'narrow-aperture (f/11+)').",
+                "type": "string"
+              },
+              "lensCharacteristics": {
+                "description": "Identify any distinct optical characteristics or artifacts from the lens. Use keywords like 'lens-flare', 'vignetting', 'chromatic-aberration', 'background-compression', 'no-visible-distortion', 'sharp-rendering'.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "lightingStyleKeywords": {
+                "description": "Based on your analysis, provide keywords for the lighting style. Use professional terms (e.g., 'soft-light', 'high-key', 'studio-light').",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "depthOfField": {
+                "description": "Describe the depth of field observed in the image, using a standard term (e.g., 'shallow-depth-of-field').",
+                "type": "string"
+              },
+              "focalPoint": {
+                "description": "The specific subject or area that is in sharpest focus (e.g., 'Model's eyes', 'Embroidery detail').",
+                "type": "string"
+              },
+              "colorAndToneKeywords": {
+                "description": "Based on your analysis, provide keywords for the overall color palette and tone. Use standard terms (e.g., 'warm-tones', 'muted', 'low-contrast').",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "inferredSensorSize": {
+                "description": "Based on the overall image quality, depth of field control, and dynamic range, infer the likely camera sensor size. (e.g., 'full-frame', 'medium-format', 'APS-C', 'smartphone-sensor').",
+                "type": "string"
+              },
+              "shutterSpeedEffect": {
+                "description": "Analyze the image for motion. Describe the effect of the shutter speed. (e.g., 'frozen-action (fast shutter)', 'motion-blur (slow shutter)', 'no-motion-detected').",
+                "type": "string"
+              },
+              "imageQualityKeywords": {
+                "description": "Describe the clarity and texture of the image. Use keywords like 'clean', 'sharp', 'low-noise', 'visible-film-grain', 'digital-noise', 'high-dynamic-range'.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "poseKeywords": {
+                "description": "Identify high-level keywords that describe the pose (e.g., 'standing', 'seated', 'direct-gaze').",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "poseDescription": {
+                "description": "A detailed, narrative description of the subject's pose, body language, and expression.",
+                "type": "string"
+              },
+              "accessoryDescription": {
+                "description": "A detailed, descriptive summary of all accessories worn by the subject. If no accessories are visible, state 'No accessories visible'.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "description",
+              "shotType",
+              "angle",
+              "compositionKeywords",
+              "inferredFocalLength",
+              "inferredAperture",
+              "lensCharacteristics",
+              "lightingStyleKeywords",
+              "depthOfField",
+              "focalPoint",
+              "colorAndToneKeywords",
+              "inferredSensorSize",
+              "shutterSpeedEffect",
+              "imageQualityKeywords",
+              "poseKeywords",
+              "poseDescription",
+              "accessoryDescription"
+            ],
+            "additionalProperties": false
+          },
+          "subject": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "description": "A detailed, holistic summary of the subject. **Crucially, include observations about their facial expression, mood, hair style and color, and overall presence.** Focus only on the person in the image.",
+                "type": "string"
+              },
+              "modelName": {
+                "description": "Provide a short, descriptive, human-readable title for the subject. **This should be a summary of their role or appearance, NOT their ethnicity or skin tone.** (e.g., 'Woman in an elegant pose', 'Man with a thoughtful expression', 'Smiling woman in a studio').",
+                "type": "string"
+              },
+              "ethnicityKeywords": {
+                "description": "Provide objective keywords for the subject's perceived ethnicity. Use lowercase and kebab-case for multi-word terms (e.g., 'south-asian', 'east-asian', 'caucasian').",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "genderKeywords": {
+                "description": "Provide objective keywords for the subject's perceived gender. Use lowercase formatting (e.g., 'woman', 'man').",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "ageKeywords": {
+                "description": "Provide objective keywords for the subject's perceived age range. Use lowercase and kebab-case for multi-word terms (e.g., 'child', 'young-adult', 'middle-aged').",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "bodyTypeKeywords": {
+                "description": "Provide objective keywords for the subject's visible body type. Use lowercase formatting (e.g., 'slim', 'athletic', 'average').",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "subjectAngle": {
+                "description": "The subject's orientation relative to the camera. Use 'front' if they are facing the camera, 'side' if they are turned to the side, and 'back' if they are showing their back.",
+                "type": "string",
+                "enum": [
+                  "front",
+                  "side",
+                  "back"
+                ]
+              }
+            },
+            "required": [
+              "description",
+              "modelName",
+              "ethnicityKeywords",
+              "genderKeywords",
+              "ageKeywords",
+              "bodyTypeKeywords",
+              "subjectAngle"
+            ],
+            "additionalProperties": false
+          },
+          "gender": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "src",
+          "setId",
+          "productType",
+          "responsiveImages",
+          "description",
+          "altText",
+          "imgPermalink",
+          "pagePermalink",
+          "width",
+          "height",
+          "aspectRatioType",
+          "aspectRatio",
+          "platform",
+          "platformId",
+          "platformUrl"
+        ],
+        "additionalProperties": false
+      },
+      "ProductStock": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

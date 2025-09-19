@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "804906482484",
+    "project_id": "techrelieve-90c12",
+    "storage_bucket": "techrelieve-90c12.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:804906482484:android:0695a0b6a17e68a5668361",
+        "android_client_info": {
+          "package_name": "com.ratnawnai.RatNawnAI"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLKMKklWT12uKDQETyG-MTX5XKAxP-qfs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
