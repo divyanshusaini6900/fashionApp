@@ -15,7 +15,7 @@ class WalletPage extends StatefulWidget {
   @override
   State<WalletPage> createState() => _WalletPageState();
 }
-
+//ee
 class _WalletPageState extends State<WalletPage> {
   // Subscription data - this would come from Firebase/API
   final Map<String, dynamic> subscriptionData = {
