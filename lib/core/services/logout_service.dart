@@ -3,6 +3,7 @@ import 'package:flutter/painting.dart';
 import 'firebase_service.dart';
 import 'firebase_auth_wrapper.dart';
 import 'background_GenSpace_service.dart';
+import 'notification_service.dart';
 import '../utils/clean_performance_utils.dart';
 import '../../features/user/bloc/user_bloc.dart';
 
@@ -108,9 +109,8 @@ class LogoutService {
     try {
       if (kDebugMode) print('🔄 Clearing notification data...');
       
-      // Cancel any pending notifications
-      // Note: We can't directly cancel all notifications without breaking the API,
-      // but we can prepare for a clean state
+      // Cancel all notifications including background service notifications
+      await NotificationService.cancelAllNotifications();
       
       if (kDebugMode) print('✅ Notification data cleared');
     } catch (e) {

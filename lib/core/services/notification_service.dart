@@ -1,6 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationPlugin = FlutterLocalNotificationsPlugin();
@@ -116,6 +115,89 @@ class NotificationService {
     } catch (e) {
       if (kDebugMode) {
         print('❌ Failed to request notification permissions: $e');
+      }
+    }
+  }
+
+  /// Cancel a specific notification by ID
+  static Future<void> cancelNotification(int id) async {
+    try {
+      if (!_isInitialized) {
+        if (kDebugMode) {
+          print('⚠️ Notification service not initialized, skipping cancel');
+        }
+        return;
+      }
+
+      await _notificationPlugin.cancel(id);
+      
+      if (kDebugMode) {
+        print('✅ Cancelled notification with ID: $id');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Failed to cancel notification: $e');
+      }
+    }
+  }
+
+  /// Cancel all notifications
+  static Future<void> cancelAllNotifications() async {
+    try {
+      if (!_isInitialized) {
+        if (kDebugMode) {
+          print('⚠️ Notification service not initialized, skipping cancel all');
+        }
+        return;
+      }
+
+      await _notificationPlugin.cancelAll();
+      
+      if (kDebugMode) {
+        print('✅ Cancelled all notifications');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Failed to cancel all notifications: $e');
+      }
+    }
+  }
+
+  /// Clear background service notifications (both GenSpace and Video)
+  static Future<void> clearBackgroundServiceNotifications() async {
+    try {
+      if (!_isInitialized) {
+        if (kDebugMode) {
+          print('⚠️ Notification service not initialized, attempting to initialize...');
+        }
+        await initialize(); // Try to initialize if not already done
+        if (!_isInitialized) {
+          print('❌ Could not initialize notification service for clearing');
+          return;
+        }
+      }
+
+      // Cancel the GenSpace background service notification (ID 999)
+      await _notificationPlugin.cancel(999);
+      
+      // Cancel the Video background service notification (ID 998)  
+      await _notificationPlugin.cancel(998);
+      
+      // Also try to cancel any foreground service notifications that might be stuck
+      for (int i = 995; i <= 1005; i++) {
+        try {
+          await _notificationPlugin.cancel(i);
+        } catch (e) {
+          // Silent fail for each individual notification
+        }
+      }
+      
+      if (kDebugMode) {
+        print('✅ Cleared background service notifications (GenSpace: 999, Video: 998, Range: 995-1005)');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Failed to clear background service notifications: $e');
       }
     }
   }

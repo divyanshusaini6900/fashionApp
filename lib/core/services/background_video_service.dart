@@ -13,6 +13,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../config/api_config.dart';
 import 'battery_optimization_helper.dart';
+import 'notification_service.dart';
 
 /// Connection state tracking for video generation
 class VideoConnectionState {
@@ -951,9 +952,19 @@ Future<String> startVideoGeneration({
       _activeVideoGenerations.clear();
       _monitoringActive = false;
       
+      // IMMEDIATELY clear the persistent video background service notifications
+      await NotificationService.cancelNotification(998); // Video service uses ID 998
+      if (kDebugMode) print('🔔 Video background service notification cleared');
+      
       if (kDebugMode) print('✅ Video background service stop completed');
     } catch (e) {
       if (kDebugMode) print('⚠️ Failed to stop video service: $e');
+      // Still try to clear notifications even if stopping failed
+      try {
+        await NotificationService.cancelNotification(998);
+      } catch (notifError) {
+        if (kDebugMode) print('⚠️ Failed to clear video notification: $notifError');
+      }
     }
   }
 

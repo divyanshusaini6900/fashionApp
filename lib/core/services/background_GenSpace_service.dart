@@ -13,7 +13,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../config/api_config.dart';
 import 'battery_optimization_helper.dart';
-import 'firebase_service.dart';
+import 'notification_service.dart';
 
 /// Connection state tracking
 class ConnectionState {
@@ -83,14 +83,14 @@ class BackgroundGenSpaceService {
       // Ensure any existing background service is stopped on app start
       try {
         final service = FlutterBackgroundService();
-        final isRunning = await service.isRunning();
-        if (isRunning) {
-          service.invoke('stop');
-          if (kDebugMode)
-            print('✅ Stopped existing background service on app start');
-        }
+        // SKIP isRunning() check and just send stop signal
+        service.invoke('stop');
+        service.invoke('force_stop');
+        await Future.delayed(Duration(milliseconds: 300));
+        if (kDebugMode)
+          print('✅ Sent stop signals to any existing background service on app start');
       } catch (e) {
-        if (kDebugMode) print('⚠️ Failed to check/stop existing service: $e');
+        if (kDebugMode) print('⚠️ Failed to stop existing service: $e');
       }
 
       // Initialize Flutter Background Service with persistence
@@ -150,23 +150,32 @@ class BackgroundGenSpaceService {
   /// Perform quick health check and restart if needed
   static Future<void> _quickHealthCheck() async {
     try {
-      final service = FlutterBackgroundService();
-      final isRunning = await service.isRunning();
+      // SKIP service.isRunning() check as it causes MissingPluginException
+      // Instead, just attempt to restart if there are active jobs
+      
+      final activeJobs = await FirebaseFirestore.instance
+          .collection('GenSpace_jobs')
+          .where('status', isEqualTo: 'processing')
+          .limit(1)
+          .get();
 
-      if (!isRunning) {
+      if (activeJobs.docs.isNotEmpty) {
         if (kDebugMode)
           print(
-              '🔄 Quick check: Service not running, attempting immediate restart...');
+              '🔄 Quick check: Active jobs found, ensuring service is running...');
 
         try {
+          final service = FlutterBackgroundService();
           await service.startService();
-          if (kDebugMode) print('✅ Service restarted via quick check');
+          if (kDebugMode) print('✅ Service started/restarted via quick check');
         } catch (e) {
-          if (kDebugMode) print('❌ Quick restart failed: $e');
+          if (kDebugMode) print('❌ Quick service start failed: $e');
         }
+      } else {
+        if (kDebugMode) print('ℹ️ Quick check: No active jobs, skipping restart');
       }
     } catch (e) {
-      // Silent fail for quick checks
+      if (kDebugMode) print('⚠️ Quick health check error: $e');
     }
   }
 
@@ -546,39 +555,37 @@ class BackgroundGenSpaceService {
 
   static Future<bool> isServiceRunning() async {
     try {
-      final service = FlutterBackgroundService();
-      return await service.isRunning();
+      // AVOID using service.isRunning() as it causes MissingPluginException
+      // Instead, assume service might be running and let the stop logic handle it
+      if (kDebugMode) print('ℹ️ Skipping service running check due to plugin issues');
+      return true; // Always assume running to ensure stop logic is called
     } catch (e) {
-      return false;
+      if (kDebugMode) print('⚠️ Error checking service status: $e');
+      return true; // Return true to ensure stop logic is attempted
     }
   }
 
   static Future<void> stopService() async {
     try {
-      final service = FlutterBackgroundService();
-      // First check if service is actually running
-      final isRunning = await service.isRunning();
-      if (!isRunning) {
-        if (kDebugMode) print('ℹ️ Background service is already stopped');
-        return;
-      }
-
       if (kDebugMode) print('🛑 Forcefully stopping background service...');
 
+      final service = FlutterBackgroundService();
+      
+      // SKIP the isRunning() check as it's causing MissingPluginException
+      // Just attempt to stop the service directly
+      
       // Send stop signal to service
       service.invoke('stop');
+      if (kDebugMode) print('📤 Stop signal sent to service');
 
       // Give it a moment to respond to the stop signal
       await Future.delayed(Duration(milliseconds: 500));
 
-      // Force stop if still running
-      final stillRunning = await service.isRunning();
-      if (stillRunning) {
-        if (kDebugMode) print('🔄 Service still running, forcing stop...');
-        // Force stop the service
-        service.invoke('force_stop');
-        await Future.delayed(Duration(milliseconds: 500));
-      }
+      // Force stop the service (don't check if still running, just force stop)
+      service.invoke('force_stop');
+      if (kDebugMode) print('📤 Force stop signal sent to service');
+      
+      await Future.delayed(Duration(milliseconds: 500));
 
       // Cancel all WorkManager tasks when stopping service
       await Workmanager().cancelAll();
@@ -587,9 +594,20 @@ class BackgroundGenSpaceService {
       // Stop monitoring when service is stopped
       _stopServiceMonitoring();
 
+      // IMMEDIATELY clear the persistent background service notifications
+      await NotificationService.clearBackgroundServiceNotifications();
+      if (kDebugMode) print('🔔 Background service notifications cleared');
+
       if (kDebugMode) print('✅ Background service stop completed');
     } catch (e) {
       if (kDebugMode) print('⚠️ Failed to stop service: $e');
+      // Still try to clear notifications even if stopping failed
+      try {
+        await NotificationService.clearBackgroundServiceNotifications();
+        if (kDebugMode) print('🔔 Notifications cleared despite service stop error');
+      } catch (notifError) {
+        if (kDebugMode) print('⚠️ Failed to clear notifications: $notifError');
+      }
     }
   }
 
@@ -599,6 +617,49 @@ class BackgroundGenSpaceService {
       await BatteryOptimizationHelper.ensureBatteryOptimizationSetup(context);
     } catch (e) {
       if (kDebugMode) print('⚠️ Failed to show battery optimization guide: $e');
+    }
+  }
+
+  /// Emergency method to force stop everything and clear notifications
+  /// Use this when service is completely stuck
+  static Future<void> emergencyStopAndClear() async {
+    try {
+      if (kDebugMode) print('🚨 EMERGENCY STOP: Force stopping everything...');
+
+      // Stop all monitoring
+      _stopServiceMonitoring();
+
+      // Cancel all WorkManager tasks
+      try {
+        await Workmanager().cancelAll();
+        if (kDebugMode) print('✅ Emergency: All WorkManager tasks cancelled');
+      } catch (e) {
+        if (kDebugMode) print('⚠️ Emergency: WorkManager cancel failed: $e');
+      }
+
+      // Force stop service without any checks
+      try {
+        final service = FlutterBackgroundService();
+        service.invoke('stop');
+        service.invoke('force_stop');
+        service.invoke('stopSelf'); // Additional stop method
+        if (kDebugMode) print('✅ Emergency: All stop signals sent');
+      } catch (e) {
+        if (kDebugMode) print('⚠️ Emergency: Service stop failed: $e');
+      }
+
+      // Force clear notifications
+      try {
+        await NotificationService.clearBackgroundServiceNotifications();
+        await NotificationService.cancelAllNotifications();
+        if (kDebugMode) print('✅ Emergency: All notifications cleared');
+      } catch (e) {
+        if (kDebugMode) print('⚠️ Emergency: Notification clear failed: $e');
+      }
+
+      if (kDebugMode) print('🚨 EMERGENCY STOP: Completed');
+    } catch (e) {
+      if (kDebugMode) print('❌ Emergency stop failed: $e');
     }
   }
 }
@@ -1255,7 +1316,7 @@ Future<void> _pollJobStatusWithRecovery(
         ApiConfig.fashionAIEndpoint, // '/ratnawnai/fashionai'
         queryParameters: {
           'id': currentConversionId!,
-          if (shouldGenerateCsv) 'generateCsv': shouldGenerateCsv,
+          'generateCsv': shouldGenerateCsv, // Always include generateCsv parameter
         },
         options: Options(
           receiveTimeout: Duration(seconds: 30),
@@ -1555,6 +1616,10 @@ Future<void> _handleCompletedJobWithSaving(
       'Your smart GenSpace has been generated successfully!',
       importance: Importance.high,
     );
+
+    // IMMEDIATELY clear background service notification after showing success notification
+    await NotificationService.clearBackgroundServiceNotifications();
+    if (kDebugMode) print('🔔 Background service notification cleared after completion');
 
     // Check if there are other processing jobs after completion
     if (kDebugMode)
@@ -1894,8 +1959,20 @@ Future<void> _checkAndStopServiceIfNoJobs() async {
       if (kDebugMode)
         print(
             '🔍 Periodic check: No active jobs found, stopping background service...');
-      await BackgroundGenSpaceService.stopService();
-      if (kDebugMode) print('✅ Background service stopped automatically');
+      
+      try {
+        await BackgroundGenSpaceService.stopService();
+        if (kDebugMode) print('✅ Background service stopped automatically');
+      } catch (e) {
+        if (kDebugMode) print('❌ Failed to stop service: $e');
+        // Even if service stop fails, clear notifications
+        try {
+          await NotificationService.clearBackgroundServiceNotifications();
+          if (kDebugMode) print('🔔 Notifications cleared despite service error');
+        } catch (notifError) {
+          if (kDebugMode) print('⚠️ Failed to clear notifications: $notifError');
+        }
+      }
     } else {
       if (kDebugMode)
         print(

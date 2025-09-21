@@ -218,10 +218,10 @@ class _ProfilePageState extends State<ProfilePage>
                           // Profile Header Card
                           _buildProfileHeaderCard(user),
 
-                          const SizedBox(height: 24),
+                          // const SizedBox(height: 24),
 
-                          // Account Statistics
-                          _buildAccountStatistics(),
+                          // // Account Statistics
+                          // _buildAccountStatistics(),
 
                           const SizedBox(height: 24),
 
@@ -462,62 +462,62 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
-  Widget _buildAccountStatistics() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Account Overview',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: BlocBuilder<WalletBloc, WalletState>(
-                builder: (context, state) {
-                  final balance = state is WalletLoaded ? state.balance : 0;
-                  // Calculate trend based on previous balance
-                  final trend = balance > 50
-                      ? '+${((balance - 50) / 50 * 100).toInt()}%'
-                      : balance > 0
-                          ? '+0%'
-                          : '0%';
-                  final isPositive = balance >= 50;
+  // Widget _buildAccountStatistics() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text(
+  //         'Account Overview',
+  //         style: GoogleFonts.poppins(
+  //           fontSize: 20,
+  //           fontWeight: FontWeight.w600,
+  //           color: AppColors.textPrimary,
+  //         ),
+  //       ),
+  //       const SizedBox(height: 16),
+  //       Row(
+  //         children: [
+  //           Expanded(
+  //             child: BlocBuilder<WalletBloc, WalletState>(
+  //               builder: (context, state) {
+  //                 final balance = state is WalletLoaded ? state.balance : 0;
+  //                 // Calculate trend based on previous balance
+  //                 final trend = balance > 50
+  //                     ? '+${((balance - 50) / 50 * 100).toInt()}%'
+  //                     : balance > 0
+  //                         ? '+0%'
+  //                         : '0%';
+  //                 final isPositive = balance >= 50;
 
-                  return _buildAnalyticsCard(
-                    title: 'Credit Balance',
-                    value: balance.toString(),
-                    subtitle: 'Available Credits',
-                    icon: Icons.monetization_on,
-                    color: AppColors.primaryBlue,
-                    trend: trend,
-                    isPositive: isPositive,
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildAnalyticsCard(
-                title: 'Total GenSpaces',
-                value: '$_totalGenSpaces',
-                subtitle: 'Generated GenSpaces',
-                icon: Icons.auto_awesome,
-                color: AppColors.success,
-                trend: '—',
-                isPositive: true,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+  //                 return _buildAnalyticsCard(
+  //                   title: 'Credit Balance',
+  //                   value: balance.toString(),
+  //                   subtitle: 'Available Credits',
+  //                   icon: Icons.monetization_on,
+  //                   color: AppColors.primaryBlue,
+  //                   trend: trend,
+  //                   isPositive: isPositive,
+  //                 );
+  //               },
+  //             ),
+  //           ),
+  //           const SizedBox(width: 16),
+  //           Expanded(
+  //             child: _buildAnalyticsCard(
+  //               title: 'Total GenSpaces',
+  //               value: '$_totalGenSpaces',
+  //               subtitle: 'Generated GenSpaces',
+  //               icon: Icons.auto_awesome,
+  //               color: AppColors.success,
+  //               trend: '—',
+  //               isPositive: true,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildAnalyticsCard({
     required String title,

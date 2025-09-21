@@ -1044,7 +1044,7 @@ class _WalletPageState extends State<WalletPage> {
             },
             icon: const Icon(Icons.add, size: 20),
             label: Text(
-              'Buy Extra Credits (₹160/credit)',
+              'Buy Extra Credits',
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,

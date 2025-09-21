@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/services/razorpay_service.dart';
+import '../../../../core/services/razorpay_service_secure.dart';
 import 'checkout_page.dart'; // ADD THIS IMPORT
 import 'credit_checkout_page.dart';
 
@@ -264,6 +264,7 @@ class _RatnawnAIPricingPageState extends State<RatnawnAIPricingPage> {
 
                       List<PricingPlan> plans = snapshot.data!.docs
                           .map((doc) => PricingPlan.fromFirestore(doc))
+                          .where((plan) => !plan.name.toLowerCase().replaceAll(' ', '').replaceAll('-', '').contains('payasyougo'))
                           .toList();
 
                       return Column(
@@ -395,7 +396,7 @@ class _RatnawnAIPricingPageState extends State<RatnawnAIPricingPage> {
             color: AppColors.textSecondary,
           ),
         ),
-        credits != null && credits > 0
+        credits > 0
             ? Text(
                 '= ${credits.toStringAsFixed(credits % 1 == 0 ? 0 : 1)} Credit${credits != 1 ? 's' : ''}',
                 style: GoogleFonts.poppins(
@@ -886,7 +887,7 @@ class _RatnawnAIPricingPageState extends State<RatnawnAIPricingPage> {
 
   Widget _buildPayAsYouGoCard() {
     return StreamBuilder<DocumentSnapshot>(
-      stream: _firestore.collection('credits').doc('payAsYouGo').snapshots(),
+      stream: _firestore.collection('pricing_plans').doc('pay_as_you_go').snapshots(),
       builder: (context, snapshot) {
         double creditRate = 160;
 
@@ -1147,7 +1148,7 @@ class _RatnawnAIPricingPageState extends State<RatnawnAIPricingPage> {
       MaterialPageRoute(
         builder: (context) => CreditCheckoutPage(
           creditRate: creditRate,
-          initialCredits: 10,
+          initialCredits: 1,
         ),
       ),
     );

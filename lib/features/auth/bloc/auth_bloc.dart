@@ -68,6 +68,15 @@ class AuthCheckRequested extends AuthEvent {
   const AuthCheckRequested();
 }
 
+class AuthForgotPasswordRequested extends AuthEvent {
+  final String email;
+
+  const AuthForgotPasswordRequested({required this.email});
+
+  @override
+  List<Object> get props => [email];
+}
+
 // States
 abstract class AuthState extends Equatable {
   const AuthState();
@@ -115,6 +124,15 @@ class AuthSignUpSuccess extends AuthState {
   List<Object> get props => [message];
 }
 
+class AuthForgotPasswordSuccess extends AuthState {
+  final String message;
+
+  const AuthForgotPasswordSuccess({required this.message});
+
+  @override
+  List<Object> get props => [message];
+}
+
 // Enhanced Auth BLoC
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   StreamSubscription<User?>? _authStateSubscription;
@@ -127,6 +145,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLogoutRequested>(_onLogoutRequested);
     on<AuthStatusChanged>(_onAuthStatusChanged);
     on<AuthCheckRequested>(_onAuthCheckRequested);
+    on<AuthForgotPasswordRequested>(_onForgotPasswordRequested);
 
     // Initialize auth state listener
     _initializeAuthListener();
@@ -474,6 +493,48 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } catch (e) {
       emit(const AuthUnauthenticated());
+    }
+  }
+
+  Future<void> _onForgotPasswordRequested(
+    AuthForgotPasswordRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
+
+    try {
+      final email = event.email.trim().toLowerCase();
+
+      // Validate email format
+      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+        emit(const AuthError(message: 'Please enter a valid email address.'));
+        return;
+      }
+
+      // Check if user exists in Firestore
+      final userQuery = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (userQuery.docs.isEmpty) {
+        emit(const AuthError(
+            message: 'No account found with this email address.'));
+        return;
+      }
+
+      // Send password reset email
+      await _auth.sendPasswordResetEmail(email: email);
+
+      emit(const AuthForgotPasswordSuccess(
+          message: 'Password reset email sent! Please check your inbox.'));
+    } on FirebaseAuthException catch (e) {
+      emit(AuthError(message: _getAuthErrorMessage(e.code)));
+    } catch (e) {
+      print('Forgot password error: $e');
+      emit(const AuthError(
+          message: 'Failed to send reset email. Please try again.'));
     }
   }
 

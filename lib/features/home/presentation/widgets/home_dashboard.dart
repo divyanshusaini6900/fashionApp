@@ -564,8 +564,8 @@ class HomeDashboardState extends State<HomeDashboard>
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             Container(
-              width: 35,
-              height: 35,
+              width: 30,
+              height: 30,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
@@ -589,7 +589,7 @@ class HomeDashboardState extends State<HomeDashboard>
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+    
                 Text(
                   subtitle,
                   style: GoogleFonts.poppins(

@@ -9,20 +9,17 @@ import '../../bloc/auth_bloc.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/gradient_button.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class ForgotPasswordPage extends StatefulWidget {
+  const ForgotPasswordPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-class _LoginPageState extends State<LoginPage>
+class _ForgotPasswordPageState extends State<ForgotPasswordPage>
     with SingleTickerProviderStateMixin {
-  final _emailFormKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  
-  bool _obscurePassword = true;
   
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -63,16 +60,14 @@ class _LoginPageState extends State<LoginPage>
   void dispose() {
     _animationController.dispose();
     _emailController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
-  void _login() {
-    if (_emailFormKey.currentState!.validate()) {
+  void _sendResetEmail() {
+    if (_formKey.currentState!.validate()) {
       context.read<AuthBloc>().add(
-        AuthEmailLoginRequested(
+        AuthForgotPasswordRequested(
           email: _emailController.text.trim(),
-          password: _passwordController.text,
         ),
       );
     }
@@ -83,8 +78,25 @@ class _LoginPageState extends State<LoginPage>
     return Scaffold(
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-          if (state is AuthAuthenticated) {
-            // Navigation handled by GoRouter redirect
+          if (state is AuthForgotPasswordSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.success,
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.all(16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            );
+            
+            // Navigate back to login after showing success message
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                context.go(AppRoutes.login);
+              }
+            });
           } else if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -115,15 +127,14 @@ class _LoginPageState extends State<LoginPage>
                       position: _slideAnimation,
                       child: Column(
                         children: [
+                          _buildHeader(),
                           Expanded(
                             child: Center(
                               child: SingleChildScrollView(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    _buildHeader(),
-                                    const SizedBox(height: 32),
-                                    _buildEmailLoginForm(),
+                                    _buildResetForm(),
                                   ],
                                 ),
                               ),
@@ -144,55 +155,48 @@ class _LoginPageState extends State<LoginPage>
   }
 
   Widget _buildHeader() {
-    return Column(
-      children: [
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(25),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryBlue.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+    return Padding(
+      padding: const EdgeInsets.only(top: 20, bottom: 40),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => context.go(AppRoutes.login),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
+              child: const Icon(
+                Icons.arrow_back_ios_rounded,
+                color: AppColors.primaryBlue,
+                size: 20,
+              ),
+            ),
           ),
-          child: const Icon(
-            Icons.video_collection_rounded,
-            size: 50,
-            color: AppColors.white,
+          const SizedBox(width: 16),
+          Text(
+            'Forgot Password',
+            style: GoogleFonts.poppins(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: AppColors.darkGrey,
+            ),
           ),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'Welcome Back',
-          style: GoogleFonts.poppins(
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            color: AppColors.darkGrey,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Sign in to continue to RatNawnAI',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            color: AppColors.grey,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-
-  Widget _buildEmailLoginForm() {
+  Widget _buildResetForm() {
     return Container(
-      key: const ValueKey('email_form'),
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -206,19 +210,58 @@ class _LoginPageState extends State<LoginPage>
         ],
       ),
       child: Form(
-        key: _emailFormKey,
+        key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Login',
-              style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: AppColors.darkGrey,
+            // Icon and Title
+            Center(
+              child: Column(
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      gradient: AppColors.primaryGradient,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primaryBlue.withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.lock_reset_rounded,
+                      size: 40,
+                      color: AppColors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Reset Password',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.darkGrey,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Enter your email address and we\'ll send you a link to reset your password.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.grey,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
+            
+            const SizedBox(height: 32),
             
             // Email Field
             CustomTextField(
@@ -238,48 +281,15 @@ class _LoginPageState extends State<LoginPage>
               },
             ),
             
-            const SizedBox(height: 20),
-            
-            // Password Field
-            CustomTextField(
-              controller: _passwordController,
-              labelText: 'Password',
-              hintText: 'Enter your password',
-              prefixIcon: Icons.lock_outline,
-              obscureText: _obscurePassword,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  color: AppColors.grey,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter your password';
-                }
-                if (value.length < 6) {
-                  return 'Password must be at least 6 characters';
-                }
-                return null;
-              },
-            ),
-            
             const SizedBox(height: 32),
             
-            // Login Button
+            // Send Reset Email Button
             BlocBuilder<AuthBloc, AuthState>(
               builder: (context, state) {
                 final isLoading = state is AuthLoading;
                 
                 return GradientButton(
-                  onPressed: isLoading ? null : _login,
+                  onPressed: isLoading ? null : _sendResetEmail,
                   gradient: AppColors.buttonGradient,
                   child: isLoading
                       ? const SizedBox(
@@ -293,7 +303,7 @@ class _LoginPageState extends State<LoginPage>
                           ),
                         )
                       : Text(
-                          'Login',
+                          'Send Reset Email',
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -303,31 +313,11 @@ class _LoginPageState extends State<LoginPage>
                 );
               },
             ),
-            
-            const SizedBox(height: 20),
-            
-            // Forgot Password Link
-            Center(
-              child: GestureDetector(
-                onTap: () {
-                  context.go(AppRoutes.forgotPassword);
-                },
-                child: Text(
-                  'Forgot Password?',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primaryBlue,
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
     );
   }
-
 
   Widget _buildFooter() {
     return Padding(
@@ -338,7 +328,7 @@ class _LoginPageState extends State<LoginPage>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                "Don't have an account? ",
+                "Remember your password? ",
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
@@ -347,10 +337,10 @@ class _LoginPageState extends State<LoginPage>
               ),
               GestureDetector(
                 onTap: () {
-                  context.go(AppRoutes.signup);
+                  context.go(AppRoutes.login);
                 },
                 child: Text(
-                  'Sign Up',
+                  'Back to Login',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

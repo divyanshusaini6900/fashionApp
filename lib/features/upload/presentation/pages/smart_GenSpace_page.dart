@@ -126,20 +126,16 @@ class _SmartGenSpacePageState extends State<SmartGenSpacePage>
     }
   }
 
-  /// Get list of uploaded image types in order
+  /// Get list of uploaded image types in order (only Front, Side, Back views)
   List<String> _getUploadedImageTypes() {
     List<String> uploadedTypes = [];
     
-    // Add product images in order
+    // Add only Front, Side, and Back view images for background selection
     if (_productImages['front_view'] != null) uploadedTypes.add('Front View');
     if (_productImages['side_view'] != null) uploadedTypes.add('Side View');
     if (_productImages['back_view'] != null) uploadedTypes.add('Back View');
-    if (_productImages['detail_view'] != null) uploadedTypes.add('Detail View');
     
-    // Add additional images (use base type only)
-    if (_additionalImages.isNotEmpty) {
-      uploadedTypes.add('Additional View');
-    }
+    // Note: Detail View and Additional View are excluded from background selection
     
     return uploadedTypes;
   }
@@ -233,63 +229,56 @@ class _SmartGenSpacePageState extends State<SmartGenSpacePage>
     return viewTypeArrays;
   }
 
-  /// Get background arrays for GenSpace generation (only for specific views)
+  /// Get background arrays for GenSpace generation (including defaults for Detail View and Additional View)
   Map<String, List<int>> getBackgroundArraysForGeneration() {
     final allArrays = _createBackgroundArraysByViewType();
-    // Only return arrays for specific views, not generic "Image X"
-    return Map<String, List<int>>.fromEntries(
+    
+    // Start with arrays from user selections (only for specific views, not generic "Image X")
+    final result = Map<String, List<int>>.fromEntries(
       allArrays.entries.where((entry) => 
         !entry.key.startsWith('Image ') || entry.key.contains('View')
       )
     );
+    
+    // Set default [0,0,0] arrays for Detail View and Additional View if they have images but no background selection
+    if (_productImages['detail_view'] != null && !result.containsKey('Detail View')) {
+      result['Detail View'] = [0, 0, 0];
+    }
+    
+    if (_additionalImages.isNotEmpty && !result.containsKey('Additional View')) {
+      result['Additional View'] = [0, 0, 0];
+    }
+    
+    return result;
   }
 
   /// Print background arrays to terminal
   void _printBackgroundArrays() {
-    if (_backgroundSelections.isEmpty) {
-      print('🎨 No background selections yet');
-      return;
-    }
-    
-    // Check if we have actual specific views (not generic "Image X")
-    final hasSpecificViews = _backgroundSelections.keys.any((label) => 
-      !label.startsWith('Image ') || 
-      label.contains('Front View') || 
-      label.contains('Side View') || 
-      label.contains('Back View') || 
-      label.contains('Detail View') || 
-      label.contains('Additional View')
-    );
-    
-    if (!hasSpecificViews) {
-      print('🎨 No specific views selected - arrays will be created only for uploaded specific views');
-      return;
-    }
+    // Always show the final arrays that will be used for generation
+    final finalArrays = getBackgroundArraysForGeneration();
     
     print('\n🎨 ===== BACKGROUND ARRAYS =====');
     
-    // Print individual selections (only for specific views)
-    print('\n📋 Individual Selections:');
-    _backgroundSelections.forEach((imageLabel, background) {
-      // Skip generic "Image X" labels
-      if (!imageLabel.startsWith('Image ') || imageLabel.contains('View')) {
-        final array = _getBackgroundArray(background);
-        print('   $imageLabel -> $background -> $array');
-      }
-    });
+    // Print individual selections (only for views shown in UI)
+    if (_backgroundSelections.isNotEmpty) {
+      print('\n📋 User Selections (Front, Side, Back views only):');
+      _backgroundSelections.forEach((imageLabel, background) {
+        // Skip generic "Image X" labels
+        if (!imageLabel.startsWith('Image ') || imageLabel.contains('View')) {
+          final array = _getBackgroundArray(background);
+          print('   $imageLabel -> $background -> $array');
+        }
+      });
+    }
     
-    // Print combined arrays by view type (only for specific views)
-    final viewTypeArrays = _createBackgroundArraysByViewType();
-    final specificViewArrays = Map<String, List<int>>.fromEntries(
-      viewTypeArrays.entries.where((entry) => 
-        !entry.key.startsWith('Image ') || entry.key.contains('View')
-      )
-    );
-    
-    if (specificViewArrays.isNotEmpty) {
-      print('\n🔗 Combined Arrays by View Type:');
-      specificViewArrays.forEach((viewType, combinedArray) {
-        print('   $viewType -> $combinedArray');
+    // Print final arrays that will be sent for generation (including defaults)
+    if (finalArrays.isNotEmpty) {
+      print('\n🔗 Final Arrays for Generation:');
+      finalArrays.forEach((viewType, combinedArray) {
+        final isDefault = (viewType == 'Detail View' || viewType == 'Additional View') && 
+                          combinedArray.toString() == '[0, 0, 0]';
+        final defaultNote = isDefault ? ' (default)' : '';
+        print('   $viewType -> $combinedArray$defaultNote');
       });
     }
     
@@ -1220,12 +1209,7 @@ class _SmartGenSpacePageState extends State<SmartGenSpacePage>
                   height: 1.4, // âœ… Proper line height for readability
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a product description';
-                  }
-                  if (value.length < 3) {
-                    return 'Description must be at least 50 characters';
-                  }
+                  // Product description is optional, no minimum character requirement
                   return null;
                 },
               ),
@@ -1234,9 +1218,9 @@ class _SmartGenSpacePageState extends State<SmartGenSpacePage>
         ),
         const SizedBox(height: 8),
         Text(
-          'Character: ${_descriptionController.text.length}/3 minimum',
+          'Character: ${_descriptionController.text.length}/0 minimum',
           style: GoogleFonts.roboto(
-            color: _descriptionController.text.length >= 3
+            color: _descriptionController.text.length >= 0
                 ? const Color(0xFF218838)
                 : const Color(0xFF1E1E1E).withOpacity(0.6),
             fontSize: ResponsiveUtils.isTablet(context) ? 16 : 14,
@@ -1922,6 +1906,13 @@ class _SmartGenSpacePageState extends State<SmartGenSpacePage>
       if (kDebugMode) print('✅ Background service stopped after job completion (success: $success)');
     } catch (e) {
       if (kDebugMode) print('❌ Failed to stop background service: $e');
+      // Try emergency stop if normal stop fails
+      try {
+        await BackgroundGenSpaceService.emergencyStopAndClear();
+        if (kDebugMode) print('✅ Emergency stop completed');
+      } catch (emergencyError) {
+        if (kDebugMode) print('❌ Emergency stop also failed: $emergencyError');
+      }
     }
 
     safeSetState(() {

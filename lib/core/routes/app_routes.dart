@@ -10,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/signup_page.dart';
+import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 
 import '../../features/profile/presentation/pages/profile_page.dart';
@@ -22,6 +23,7 @@ class AppRoutes {
   static const String splash = '/';
   static const String login = '/login';
   static const String signup = '/signup';
+  static const String forgotPassword = '/forgot-password';
   static const String home = '/home';
   static const String GenSpace = '/GenSpace';
   static const String fashionAI = '/fashion-ai';
@@ -40,6 +42,7 @@ class AppRoutes {
       final isLoggedIn = FirebaseAuth.instance.currentUser != null;
       final isLoggingIn = state.matchedLocation == login;
       final isSigningUp = state.matchedLocation == signup;
+      final isForgotPassword = state.matchedLocation == forgotPassword;
       final isSplash = state.matchedLocation == splash;
 
       // NEW: allow the app to explicitly request login even if "logged in"
@@ -59,14 +62,14 @@ class AppRoutes {
       }
 
       // If not logged in and trying to access protected routes, redirect to login
-      if (!isLoggedIn && !isLoggingIn && !isSigningUp) {
+      if (!isLoggedIn && !isLoggingIn && !isSigningUp && !isForgotPassword) {
         print('🔐 Not logged in, redirecting to login');
         return login;
       }
 
-      // If logged in and on login or signup page, redirect to home
+      // If logged in and on login, signup, or forgot password page, redirect to home
       // BUT NOT if signup is in progress or forceLogin is requested
-      if (isLoggedIn && (isLoggingIn || isSigningUp) && !forceLogin && !signupInProgress) {
+      if (isLoggedIn && (isLoggingIn || isSigningUp || isForgotPassword) && !forceLogin && !signupInProgress) {
         print('🏠 Logged in, redirecting to home');
         return home;
       }
@@ -106,6 +109,15 @@ class AppRoutes {
           context,
           state,
           const SignUpPage(),
+        ),
+      ),
+      GoRoute(
+        path: forgotPassword,
+        name: 'forgot-password',
+        pageBuilder: (context, state) => _buildPageWithSlideTransition(
+          context,
+          state,
+          const ForgotPasswordPage(),
         ),
       ),
       GoRoute(

@@ -411,6 +411,11 @@ class GenSpaceQueueService {
         if (kDebugMode) print('⚠️ Notification error: $error');
       });
 
+      // IMMEDIATELY clear background service notification after showing success notification
+      NotificationService.clearBackgroundServiceNotifications().catchError((error) {
+        if (kDebugMode) print('⚠️ Error clearing background notifications: $error');
+      });
+
       // Check if there are other processing jobs after completion
       await _checkAndStopBackgroundServiceIfNoJobs();
     } catch (e) {

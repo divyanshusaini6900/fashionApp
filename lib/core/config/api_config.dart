@@ -15,9 +15,9 @@ class ApiConfig {
   static const String fashionAIVideoEndpoint = '/ratnawnai/fashionai/video';
   
   // Network Timeouts - Extended for long-running AI operations
-  static const Duration connectTimeout = Duration(minutes: 15);
-  static const Duration receiveTimeout = Duration(minutes: 15);
-  static const Duration sendTimeout = Duration(minutes: 15);
+  static const Duration connectTimeout = Duration(minutes: 10);
+  static const Duration receiveTimeout = Duration(minutes: 10);
+  static const Duration sendTimeout = Duration(minutes: 10);
   
   // Quick operation timeouts
   static const Duration healthCheckTimeout = Duration(seconds: 10);

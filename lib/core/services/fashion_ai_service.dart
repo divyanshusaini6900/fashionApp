@@ -174,6 +174,11 @@ class FashionAIService {
         if (kDebugMode) print('⚠️ Notification error: $error');
       });
 
+      // IMMEDIATELY clear background service notification after showing success notification
+      NotificationService.clearBackgroundServiceNotifications().catchError((error) {
+        if (kDebugMode) print('⚠️ Error clearing background notifications: $error');
+      });
+
       return documentId;
     } catch (e) {
       await _updateJobProgress(documentId, 0.0, 'Error: ${e.toString()}',
@@ -1452,6 +1457,11 @@ class FashionAIService {
             'Your product GenSpace has been generated successfully using the new webhook system. Check your exports.',
       ).catchError((error) {
         if (kDebugMode) print('⚠️ Notification error: $error');
+      });
+
+      // IMMEDIATELY clear background service notification after showing success notification
+      NotificationService.clearBackgroundServiceNotifications().catchError((error) {
+        if (kDebugMode) print('⚠️ Error clearing background notifications: $error');
       });
 
       if (kDebugMode) {

@@ -12,7 +12,7 @@ class CreditCheckoutPage extends StatefulWidget {
   const CreditCheckoutPage({
     super.key,
     required this.creditRate,
-    this.initialCredits = 10,
+    this.initialCredits = 1,
   });
 
   @override
@@ -22,7 +22,7 @@ class CreditCheckoutPage extends StatefulWidget {
 class _CreditCheckoutPageState extends State<CreditCheckoutPage> {
   final RazorPayService _razorPayService = RazorPayService();
   bool _isProcessingPayment = false;
-  int _selectedCredits = 10;
+  int _selectedCredits = 1;
 
   @override
   void initState() {
